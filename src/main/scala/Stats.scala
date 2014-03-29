@@ -5,7 +5,6 @@ import java.nio.CharBuffer
 import java.nio.channels.Channels
 import jnr.unixsocket.{ UnixSocketAddress, UnixSocketChannel }
 
-
 object Stats {
   sealed trait Statable {
     def typ: Int
@@ -68,6 +67,70 @@ case class Stats(path: File) {
     result.toString
   }
 
+  def map(name: String)(key: String, value: String) =
+    request(s"map $name $key $value;")
+
+  def mapSet(name: String, key: String)(value: String) =
+    request(s"map set $name $key $value;")
+
+  def clearMap(name: String) =
+    request("clear map $name;")
+
+  def clearCounters(all: Boolean = false) =
+    request(s"clear counters${if (all) " all" else ""};")
+
+  // todo [ data.<type> <operator> <value> ] | [ key <key> ]
+  def clearTable(tbl: String) =
+    request(s"clear table $tbl;")
+
+  def deleteMap(name: String)(key: String) =
+    request(s"del map $name $key;")
+
+  def disableAgent(backend: String, server: String) =
+    request(s"disable agent $backend/$server;")
+
+  def disableFrontend(name: String) =
+    request(s"disable frontend $name;")
+
+  def shutdownFrontend(fe: String) =
+    request(s"shutdown frontend $fe;")
+
+  def enableFrontend(name: String) =
+    request(s"enable frontend $name;")
+
+  def maxFrontendConnections(fe: String, max: Int) =
+    request(s"set maxcon frontend $fe $max;")
+
+  def disableServer(backend: String, server: String) =
+    request(s"disable server $backend/$server;")
+
+  def enableAgent(backend: String, server: String) =
+    request(s"enable agent $backend/$server;")
+
+  def enableServer(backend: String, server: String) =
+    request(s"enable server $backend/$server;")
+
+  def weight(backend: String, server: String) =
+    request(s"get weight $backend/$server;")
+
+  def help =
+    request(s"help;")
+
+  def maxGlobalConnections(max: Int) =
+    request(s"set maxconn global $max;")
+
+  def rateLimitGlobalConnections(max: Int) =
+    request(s"set rate-limit connections global $max;")
+
+  def rateLimitGlobalHttpCompression(max: Int) =
+    request(s"set rate-limit http-compression global $max;")
+
+  def rateLimitGlobalSessions(max: Int, ssl: Boolean = false) =
+    request(s"set rate-limit ${if (ssl) "ssl-" else ""}sessions global $max;")
+
+  def weight(backend: String, server: String, weight: Int /*0 to 256*/) =
+    request(s"set weight $backend/$server $weight;")
+
   def stat(
     proxy: Proxy = Proxy.Any,
     statable: Statable = Statable.Any,
@@ -76,8 +139,14 @@ case class Stats(path: File) {
 
   def info() = request("show info;")
 
-  def sess() = request("show sess;")
+  def sess(id: String = "") = request(s"show sess $id;")
 
   def errors(fallible: Fallible = Fallible.Any) =
-    request("show errors ${fallible.id};")
+    request(s"show errors ${fallible.id};")
+
+  def shutdownSession(id: String) =
+    request(s"shutdown session $id;")
+
+  def shutdownSessions(backend: String, server: String) =
+    request(s"shutdown sessions $backend/$server;")
 }
