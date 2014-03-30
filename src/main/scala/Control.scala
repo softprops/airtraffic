@@ -5,7 +5,7 @@ import java.nio.CharBuffer
 import java.nio.channels.Channels
 import jnr.unixsocket.{ UnixSocketAddress, UnixSocketChannel }
 
-object Stats {
+object Control {
   sealed trait Statable {
     def typ: Int
     def and(that: Statable) =
@@ -49,8 +49,8 @@ object Stats {
 
 /** see section 9.2 (  Unix Socket commands ) of http://haproxy.1wt.eu/download/1.5/doc/configuration.txt
  *  @param path is a file to the unix domain socket defined on your haproxy configs `stats socket <path>` */
-case class Stats(path: File) {
-  import airtraffic.Stats._
+case class Control(path: File) {
+  import airtraffic.Control._
 
   def request(command: String): String = {
     println(s"req $command")
