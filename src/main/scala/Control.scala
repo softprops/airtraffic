@@ -6,6 +6,10 @@ import java.nio.channels.Channels
 import jnr.unixsocket.{ UnixSocketAddress, UnixSocketChannel }
 
 object Control {
+  
+  // # pxname,svname,qcur,qmax,scur,smax,slim,stot,bin,bout,dreq,dresp,ereq,econ,eresp,wretr,wredis,status,weight,act,bck,chkfail,chkdown,lastchg,downtime,qlimit,pid,iid,sid,throttle,lbtot,tracked,type,rate,rate_lim,rate_max,check_status,check_code,check_duration,hrsp_1xx,hrsp_2xx,hrsp_3xx,hrsp_4xx,hrsp_5xx,hrsp_other,hanafail,req_rate,req_rate_max,req_tot,cli_abrt,srv_abrt,
+  //case class Stat()
+
   sealed trait Statable {
     def typ: Int
     def and(that: Statable) =
@@ -47,7 +51,7 @@ object Control {
   }
 }
 
-/** see section 9.2 (  Unix Socket commands ) of http://haproxy.1wt.eu/download/1.5/doc/configuration.txt
+/** see section 9.2 (  Unix Socket commands ) of http://cbonte.github.io/haproxy-dconv/configuration-1.5.html#9.2
  *  @param path is a file to the unix domain socket defined on your haproxy configs `stats socket <path>` */
 case class Control(path: File) {
   import airtraffic.Control._
@@ -131,11 +135,18 @@ case class Control(path: File) {
   def weight(backend: String, server: String, weight: Int /*0 to 256*/) =
     request(s"set weight $backend/$server $weight;")
 
+  /** http://cbonte.github.io/haproxy-dconv/configuration-1.5.html#9.2-show%20stat */
   def stat(
-    proxy: Proxy = Proxy.Any,
+    proxy: Proxy       = Proxy.Any,
     statable: Statable = Statable.Any,
-    serverId: Server = Server.Any) =
-    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};")
+    serverId: Server   = Server.Any): Iterable[Map[String, String]] =
+    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};").split("\n").toList match {
+      case _ :: Nil =>
+        Nil
+      case names :: stats =>
+        val keys = names.replace("# ", "").split(",")
+        stats.map { line => keys.zip(line.split(",")).toMap }
+    }
 
   def info() = request("show info;")
 
