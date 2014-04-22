@@ -6,9 +6,64 @@ import java.nio.channels.Channels
 import jnr.unixsocket.{ UnixSocketAddress, UnixSocketChannel }
 
 object Control {
-  
-  // # pxname,svname,qcur,qmax,scur,smax,slim,stot,bin,bout,dreq,dresp,ereq,econ,eresp,wretr,wredis,status,weight,act,bck,chkfail,chkdown,lastchg,downtime,qlimit,pid,iid,sid,throttle,lbtot,tracked,type,rate,rate_lim,rate_max,check_status,check_code,check_duration,hrsp_1xx,hrsp_2xx,hrsp_3xx,hrsp_4xx,hrsp_5xx,hrsp_other,hanafail,req_rate,req_rate_max,req_tot,cli_abrt,srv_abrt,
-  //case class Stat()
+
+  /** http://cbonte.github.io/haproxy-dconv/configuration-1.4.html#9.1 */
+  case class Stats(map: Map[String, String]) {
+    def get(key: String) = map.get(key)
+    def apply(key: String) = get(key).get
+    lazy val pxname = apply("pxname")
+    lazy val svname = apply("svname")
+    lazy val qcur = apply("qcur")
+    lazy val qmax = apply("qmax")
+    lazy val scur = apply("scur")
+    lazy val smax = apply("smax")
+    lazy val slim = apply("slim")
+    lazy val stot = apply("stot")
+    lazy val bin = apply("bin")
+    lazy val bout = apply("bout")
+    lazy val dreq = apply("dreq")
+    lazy val dresp = apply("dresp")
+    lazy val ereq = apply("ereq")
+    lazy val econ = apply("econ")
+    lazy val eresp = apply("eresp")
+    lazy val wretr = apply("wretr")
+    lazy val wredis = apply("wredis")
+    lazy val status = apply("status")
+    lazy val weight = apply("weight")
+    lazy val act = apply("act")
+    lazy val bck = apply("bck")
+    lazy val chkfail = apply("chkfail")
+    lazy val chkdown = apply("chkdown")
+    lazy val lastchg = apply("lastchg")
+    lazy val downtime = apply("downtime")
+    lazy val qlimit = apply("qlimit")
+    lazy val pid = apply("pid")
+    lazy val iid = apply("iid")
+    lazy val sid = apply("sid")
+    lazy val throttle = apply("throttle")
+    lazy val lbtot = apply("lbtot")
+    lazy val tracked = apply("tracked")
+    // (0=frontend, 1=backend, 2=server, 3=socket)
+    lazy val tpe = apply("type")
+    lazy val rate = apply("rate")
+    lazy val rateLim = apply("rate_lim")
+    lazy val rateMax = apply("rate_max")
+    lazy val checkStatus = apply("check_status")
+    lazy val checkCode = apply("check_code")
+    lazy val checkDuration = apply("check_duration")
+    lazy val hrsp_1xx = apply("hrsp_1xx")
+    lazy val hrsp_2xx = apply("hrsp_2xx")
+    lazy val hrsp_3xx = apply("hrsp_3xx")
+    lazy val hrsp_4xx = apply("hrsp_4xx")
+    lazy val hrsp_5xx = apply("hrsp_5xx")
+    lazy val hrsp_other = apply("hrsp_other")
+    lazy val hanafail = apply("hanafail")
+    lazy val req_rate = apply("req_rate")
+    lazy val req_rate_max = apply("req_rate_max")
+    lazy val req_tot = apply("req_tot")
+    lazy val cli_abrt = apply("cli_abrt")
+    lazy val srv_abrt = apply("srv_abrt")
+  }
 
   sealed trait Statable {
     def typ: Int
@@ -139,13 +194,15 @@ case class Control(path: File) {
   def stat(
     proxy: Proxy       = Proxy.Any,
     statable: Statable = Statable.Any,
-    serverId: Server   = Server.Any): Iterable[Map[String, String]] =
+    serverId: Server   = Server.Any): Iterable[Stats] =
     request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};").split("\n").toList match {
       case _ :: Nil =>
         Nil
       case names :: stats =>
         val keys = names.replace("# ", "").split(",")
-        stats.map { line => keys.zip(line.split(",")).toMap }
+        stats.map { line =>
+          Stats(keys.zip(line.split(",")).toMap)
+        }
     }
 
   def info() = request("show info;")
