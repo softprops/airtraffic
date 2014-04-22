@@ -2,6 +2,10 @@
 
 > control your airspace
 
+<p align="center">
+  <img src="https://gimmebar-assets.s3.amazonaws.com/5355f055a0330.jpg"/>
+</p>
+
 # usage
 
 Airtraffic scala interface for interacting with live instances of [HAProxy](http://haproxy.1wt.eu/) relying on haproxy's unix domain socket api.
