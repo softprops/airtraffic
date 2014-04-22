@@ -187,8 +187,23 @@ case class Control(path: File) {
   def rateLimitGlobalSessions(max: Int, ssl: Boolean = false) =
     request(s"set rate-limit ${if (ssl) "ssl-" else ""}sessions global $max;")
 
-  def weight(backend: String, server: String, weight: Int /*0 to 256*/) =
-    request(s"set weight $backend/$server $weight;")
+  def weight(backend: String, server: String, weight: Int /*0 to 256*/) = {
+    def clamped = weight match {
+      case under if under < 0 => 0
+      case over if over > 256 => 256
+      case ok => ok
+    }
+    request(s"set weight $backend/$server $clamped;")
+  }
+
+  def weight(backend: String, server: String, weight: Double) = {
+    def clamped = weight match {
+      case under if under < 0 => 0
+      case over if over > 100 => 100
+      case ok => ok
+    }
+    request(s"set weight $backend/$server $clamped%;")
+  }
 
   /** http://cbonte.github.io/haproxy-dconv/configuration-1.5.html#9.2-show%20stat */
   def stat(
