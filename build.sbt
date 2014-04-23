@@ -9,3 +9,5 @@ libraryDependencies += "com.github.jnr" % "jnr-unixsocket" % "0.3"
 crossScalaVersions := Seq("2.10.4", "2.11.0")
 
 scalaVersion := crossScalaVersions.value.head
+
+initialCommands := """import airtraffic._; val ctl = Control(new java.io.File("src/test/resources/conf/haproxy.stat"))"""
