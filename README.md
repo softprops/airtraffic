@@ -11,13 +11,15 @@
 Airtraffic scala interface for interacting with live instances of [HAProxy](http://haproxy.1wt.eu/) relying on haproxy's unix domain socket api.
 
 ```scala
-val ctl = airtraffic.Control(statsFilePath)
+import airtraffic.Control
+
+val ctl = Control(statsFilePath)
 
 // lists frontend, backend, listener info
 ctl.info()
 
 // change the "weight" of a backend server
-ctl.weight("backend-name", "server-name", weight)
+ctl.weight("backend-name", "server-name", Control.Weight.abs(weight))
 
 // take a front end out of rotation 
 ctl.disableFrontend("front-end-name")
