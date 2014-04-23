@@ -16,7 +16,7 @@ import airtraffic.Control
 val ctl = Control(statsFilePath)
 
 // lists frontend, backend, listener info
-ctl.info()
+ctl.stat().map(_.pxname).foreach(println)
 
 // change the "weight" of a backend server
 ctl.weight("backend-name", "server-name", Control.Weight.abs(weight))
