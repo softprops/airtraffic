@@ -4,6 +4,8 @@ import java.io.{ File, InputStreamReader, PrintWriter }
 import java.nio.CharBuffer
 import java.nio.channels.Channels
 import jnr.unixsocket.{ UnixSocketAddress, UnixSocketChannel }
+import scala.concurrent.duration.{ Duration, SECONDS }
+import scala.concurrent.{ ExecutionContext, Future }
 
 object Control {
 
@@ -88,6 +90,30 @@ object Control {
     lazy val srv_abrt = apply("srv_abrt")
   }
 
+  case class Info(map: Map[String, String]) {
+    def get(name: String) = map.get(name)
+    def apply(name: String) = map(name)
+    lazy val name = apply("Name")
+    lazy val version = apply("Version")
+    lazy val releaseDate = apply("Release_date")
+    lazy val proceses = apply("Nbproc")
+    lazy val processNumber = apply("Process_num")
+    lazy val pid = apply("Pid")
+    lazy val uptime = Duration.create(apply("Uptime_sec").toLong, SECONDS)
+    lazy val memoryMax = apply("Memmax_MB").toInt
+    lazy val ulimit = apply("Ulimit-n").toInt
+    lazy val maxSockets = apply("Maxsock").toInt
+    lazy val maxConnections = apply("Maxconn").toInt
+    lazy val maxPipes = apply("Maxpipes").toInt
+    lazy val currentConnections = apply("CurrConns").toInt
+    lazy val pipesUsed = apply("PipesUsed").toInt
+    lazy val pipesFree = apply("PipesFree").toInt
+    lazy val tasks = apply("Tasks").toInt
+    lazy val runQueue = apply("Run_queue").toInt
+    lazy val node = apply("node")
+    lazy val description = apply("description")
+  }
+
   sealed trait Statable {
     def typ: Int
     def and(that: Statable) =
@@ -133,11 +159,12 @@ object Control {
  *  @param path is a file to the unix domain socket defined on your haproxy configs `stats socket <path>`
  * a "level" option should be set. this may be one of user, operator, admin
  */
-case class Control(path: File) {
+case class Control
+ (path: File)
+ (implicit ec: ExecutionContext) {
   import airtraffic.Control._
 
-  def request(command: String): String = {
-    println(s"req $command")
+  def request(command: String): Future[String] = Future {
     val chan = UnixSocketChannel.open(new UnixSocketAddress(path))
     val writer = new PrintWriter(Channels.newOutputStream(chan)) {
       print(command)
@@ -219,8 +246,8 @@ case class Control(path: File) {
   def stat(
     proxy: Proxy       = Proxy.Any,
     statable: Statable = Statable.Any,
-    serverId: Server   = Server.Any): Iterable[Stats] =
-    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};").split("\n").toList match {
+    serverId: Server   = Server.Any): Future[Iterable[Stats]] =
+    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};").map(_.split("\n").toList match {
       case _ :: Nil =>
         Nil
       case names :: stats =>
@@ -228,9 +255,14 @@ case class Control(path: File) {
         stats.map { line =>
           Stats(keys.zip(line.split(",")).toMap)
         }
-    }
+    })
 
-  def info() = request("show info;")
+  def info() =
+    request("show info;").map(resp => Info(resp.split("\n").map {
+      case line =>
+        val Array(k, v) = line.split(":", 2)
+        (k, v.trim)
+    }.toMap))
 
   def sess(id: String = "") = request(s"show sess $id;")
 
