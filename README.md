@@ -28,4 +28,4 @@ ctl.disableFrontend("front-end-name")
 ctl.enableFrontend("front-end-name")
 ```
 
-Doug Tangren (softprops) 2013
+Doug Tangren (softprops) 2014-2015
