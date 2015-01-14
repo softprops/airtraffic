@@ -247,22 +247,25 @@ case class Control
     proxy: Proxy       = Proxy.Any,
     statable: Statable = Statable.Any,
     serverId: Server   = Server.Any): Future[Iterable[Stats]] =
-    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};").map(_.split("\n").toList match {
-      case _ :: Nil =>
-        Nil
-      case names :: stats =>
-        val keys = names.replace("# ", "").split(",")
-        stats.map { line =>
-          Stats(keys.zip(line.split(",")).toMap)
-        }
-    })
+    request(s"show stat ${proxy.id} ${statable.typ} ${serverId.id};")
+       .map(
+         _.split("\n").toList match {
+           case _ :: Nil =>
+             Nil
+           case names :: stats =>
+             val keys = names.replace("# ", "").split(",")
+             stats.map { line =>
+               Stats(keys.zip(line.split(",")).toMap)
+             }
+         })
 
-  def info() =
-    request("show info;").map(resp => Info(resp.split("\n").map {
-      case line =>
-        val Array(k, v) = line.split(":", 2)
-        (k, v.trim)
-    }.toMap))
+  def info =
+    request("show info;")
+     .map(resp => Info(resp.split("\n").map {
+       case line =>
+         val Array(k, v) = line.split(":", 2)
+         (k, v.trim)
+     }.toMap))
 
   def sess(id: String = "") = request(s"show sess $id;")
 
